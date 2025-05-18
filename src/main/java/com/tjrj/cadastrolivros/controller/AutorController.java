@@ -71,4 +71,10 @@ public class AutorController {
                 })
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Autor não encontrado."));
     }
+
+    @GetMapping("/quantidade")
+    public ResponseEntity<Long> contarAutores() {
+        long count = repository.count();
+        return ResponseEntity.ok(count);
+    }
 }

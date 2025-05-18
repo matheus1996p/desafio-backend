@@ -81,4 +81,10 @@ public class AssuntoController {
                 })
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Assunto não encontrado."));
     }
+
+    @GetMapping("/quantidade")
+    public ResponseEntity<Long> contarAssuntos() {
+        long count = repository.count();
+        return ResponseEntity.ok(count);
+    }
 }

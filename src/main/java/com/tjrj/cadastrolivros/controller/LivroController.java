@@ -16,20 +16,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.tjrj.cadastrolivros.dto.LivroDTO;
 import com.tjrj.cadastrolivros.entity.Livro;
-import com.tjrj.cadastrolivros.repository.LivroRepository;
+import com.tjrj.cadastrolivros.service.LivroService;
 
 @RestController
 @RequestMapping("/livros")
 public class LivroController {
 
     @Autowired
-    private LivroRepository repository;
+    private LivroService livroService;
 
     @GetMapping
     public ResponseEntity<?> listar() {
         try {
-            List<Livro> lista = repository.findAll();
+            List<Livro> lista = livroService.listarTodos();
             return ResponseEntity.ok(lista);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -37,10 +38,21 @@ public class LivroController {
         }
     }
 
-    @PostMapping
-    public ResponseEntity<?> criar(@RequestBody Livro livro) {
+    @GetMapping("/{id}")
+    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
         try {
-            Livro salvo = repository.save(livro);
+            Livro livro = livroService.buscarPorId(id);
+            return ResponseEntity.ok(livro);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Livro n„o encontrado.");
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<?> criar(@RequestBody LivroDTO dto) {
+        try {
+            Livro salvo = livroService.salvarOuAtualizar(dto);
             return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
         } catch (DataIntegrityViolationException | InvalidDataAccessApiUsageException ex) {
             return ResponseEntity.badRequest()
@@ -52,33 +64,41 @@ public class LivroController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody Livro livro) {
-        return repository.findById(id)
-                .map(existente -> {
-                    try {
-                        livro.setId(id);
-                        Livro atualizado = repository.save(livro);
-                        return ResponseEntity.ok(atualizado);
-                    } catch (Exception e) {
-                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Erro ao atualizar livro.");
-                    }
-                })
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Livro n√£o encontrado."));
+    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody LivroDTO dto) {
+        try {
+            dto.setId(id);
+            Livro atualizado = livroService.salvarOuAtualizar(dto);
+            return ResponseEntity.ok(atualizado);
+        } catch (DataIntegrityViolationException | InvalidDataAccessApiUsageException ex) {
+            return ResponseEntity.badRequest()
+                    .body("Erro ao atualizar livro: dados inv·lidos.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro inesperado ao atualizar livro.");
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> excluir(@PathVariable Long id) {
-        return repository.findById(id)
-                .map(existente -> {
-                    try {
-                        repository.delete(existente);
-                        return ResponseEntity.noContent().build();
-                    } catch (DataIntegrityViolationException ex) {
-                        return ResponseEntity.badRequest()
-                                .body("N√£o √© poss√≠vel excluir: livro vinculado a autores ou assuntos.");
-                    }
-                })
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Livro n√£o encontrado."));
+        try {
+            livroService.excluir(id);
+            return ResponseEntity.noContent().build();
+        } catch (DataIntegrityViolationException ex) {
+            return ResponseEntity.badRequest()
+                    .body("N„o È possÌvel excluir: livro vinculado a autores ou assuntos.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Livro n„o encontrado.");
+        }
+    }
+
+    @GetMapping("/quantidade")
+    public ResponseEntity<Long> contarLivros() {
+        try {
+            long count = livroService.listarTodos().size();
+            return ResponseEntity.ok(count);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

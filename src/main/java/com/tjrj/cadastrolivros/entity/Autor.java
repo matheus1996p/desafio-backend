@@ -10,7 +10,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -33,4 +35,9 @@ public class Autor {
     @ManyToMany(mappedBy = "autores")
     @JsonIgnore
     private List<Livro> livros;
+    
+    @JsonCreator
+  public Autor(@JsonProperty("id") Long id) {
+    this.id = id;
+  }
 }
