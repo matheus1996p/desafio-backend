@@ -1,5 +1,8 @@
 package com.tjrj.cadastrolivros.controller;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
@@ -14,67 +17,89 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.tjrj.cadastrolivros.entity.Autor;
-import com.tjrj.cadastrolivros.repository.AutorRepository;
+import com.tjrj.cadastrolivros.dto.AutorDTO;
+import com.tjrj.cadastrolivros.service.AutorService;
 
 @RestController
 @RequestMapping("/autores")
 public class AutorController {
 
      @Autowired
-    private AutorRepository repository;
+    private AutorService service;
 
     @GetMapping
     public ResponseEntity<?> listar() {
         try {
-            return ResponseEntity.ok(repository.findAll());
+            List<AutorDTO> autores = service.listarTodos();
+            return ResponseEntity.ok(autores);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao listar autores.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao listar autores.");
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
+        try {
+            Optional<AutorDTO> autorOpt = service.buscarPorId(id);
+            if (autorOpt.isPresent()) {
+                return ResponseEntity.ok(autorOpt.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                    .body("Autor não encontrado.");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body("Erro ao buscar autor.");
         }
     }
 
     @PostMapping
-    public ResponseEntity<?> criar(@RequestBody Autor autor) {
+    public ResponseEntity<?> criar(@RequestBody AutorDTO dto) {
         try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(repository.save(autor));
+            AutorDTO salvo = service.salvar(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
         } catch (DataIntegrityViolationException | InvalidDataAccessApiUsageException ex) {
-            return ResponseEntity.badRequest().body("Erro ao salvar autor: dados inválidos ou já existentes.");
+            return ResponseEntity.badRequest()
+                    .body("Erro ao salvar autor: dados inválidos ou já existentes.");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro inesperado ao salvar autor.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro inesperado ao salvar autor.");
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody Autor autor) {
-        return repository.findById(id)
-                .map(existing -> {
-                    try {
-                        autor.setId(id);
-                        return ResponseEntity.ok(repository.save(autor));
-                    } catch (Exception e) {
-                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao atualizar autor.");
-                    }
-                })
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Autor não encontrado."));
+    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody AutorDTO dto) {
+        try {
+            AutorDTO atualizado = service.atualizar(id, dto);
+            return ResponseEntity.ok(atualizado);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao atualizar autor.");
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> excluir(@PathVariable Long id) {
-        return repository.findById(id)
-                .map(existing -> {
-                    try {
-                        repository.delete(existing);
-                        return ResponseEntity.noContent().build();
-                    } catch (DataIntegrityViolationException ex) {
-                        return ResponseEntity.badRequest().body("Não é possível excluir: autor vinculado a livros.");
-                    }
-                })
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Autor não encontrado."));
+        try {
+            service.excluir(id);
+            return ResponseEntity.noContent().build();
+        } catch (DataIntegrityViolationException ex) {
+            return ResponseEntity.badRequest()
+                    .body("Não é possível excluir: autor vinculado a livros.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao excluir autor.");
+        }
     }
 
     @GetMapping("/quantidade")
-    public ResponseEntity<Long> contarAutores() {
-        long count = repository.count();
-        return ResponseEntity.ok(count);
+    public ResponseEntity<Long> contarLivros() {
+        try {
+            long count = service.listarTodos().size();
+            return ResponseEntity.ok(count);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

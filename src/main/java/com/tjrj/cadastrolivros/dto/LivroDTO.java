@@ -14,6 +14,6 @@ public class LivroDTO {
     private String anoPublicacao;
     private BigDecimal valor;
 
-    private List<Long> autores;  // apenas IDs
-    private List<Long> assuntos; // apenas IDs
+    private List<Long> autores;  
+    private List<Long> assuntos; 
 }
