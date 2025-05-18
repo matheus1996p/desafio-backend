@@ -1,10 +1,10 @@
 package com.tjrj.cadastrolivros.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,75 +16,76 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.tjrj.cadastrolivros.entity.Assunto;
-import com.tjrj.cadastrolivros.repository.AssuntoRepository;
+import com.tjrj.cadastrolivros.dto.AssuntoDTO;
+import com.tjrj.cadastrolivros.service.AssuntoService;
 
 @RestController
 @RequestMapping("/assuntos")
 public class AssuntoController {
 
-    @Autowired
-    private AssuntoRepository repository;
+     @Autowired
+    private AssuntoService service;
 
     @GetMapping
-    public ResponseEntity<?> listar() {
+    public ResponseEntity<List<AssuntoDTO>> listar() {
+        return ResponseEntity.ok(service.listarTodos());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
         try {
-            List<Assunto> lista = repository.findAll();
-            return ResponseEntity.ok(lista);
+            Optional<AssuntoDTO> assuntoOpt = service.buscarPorId(id);
+            if (assuntoOpt.isPresent()) {
+                return ResponseEntity.ok(assuntoOpt.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                    .body("Assunto n„o encontrado.");
+            }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro ao listar assuntos.");
+                                .body("Erro ao buscar assunto.");
         }
     }
 
     @PostMapping
-    public ResponseEntity<?> criar(@RequestBody Assunto assunto) {
+    public ResponseEntity<?> criar(@RequestBody AssuntoDTO dto) {
         try {
-            Assunto salvo = repository.save(assunto);
-            return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
-        } catch (DataIntegrityViolationException | InvalidDataAccessApiUsageException ex) {
-            return ResponseEntity.badRequest()
-                    .body("Erro ao salvar assunto: dados inv√°lidos ou j√° existentes.");
+            return ResponseEntity.status(HttpStatus.CREATED).body(service.criar(dto));
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.badRequest().body("Erro ao criar: descriÁ„o j· cadastrada.");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro inesperado ao salvar assunto.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao criar assunto.");
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody Assunto assunto) {
-        return repository.findById(id)
-                .map(existente -> {
-                    try {
-                        assunto.setId(id);
-                        Assunto atualizado = repository.save(assunto);
-                        return ResponseEntity.ok(atualizado);
-                    } catch (Exception e) {
-                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Erro ao atualizar assunto.");
-                    }
-                })
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Assunto n√£o encontrado."));
+    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody AssuntoDTO dto) {
+        try {
+            return ResponseEntity.ok(service.atualizar(id, dto));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao atualizar assunto.");
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> excluir(@PathVariable Long id) {
-        return repository.findById(id)
-                .map(existente -> {
-                    try {
-                        repository.delete(existente);
-                        return ResponseEntity.noContent().build();
-                    } catch (DataIntegrityViolationException ex) {
-                        return ResponseEntity.badRequest()
-                                .body("N√£o √© poss√≠vel excluir: assunto vinculado a livros.");
-                    }
-                })
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Assunto n√£o encontrado."));
+        try {
+            service.excluir(id);
+            return ResponseEntity.noContent().build();
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.badRequest().body("N„o È possÌvel excluir: assunto vinculado a livros.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao excluir assunto.");
+        }
     }
 
     @GetMapping("/quantidade")
-    public ResponseEntity<Long> contarAssuntos() {
-        long count = repository.count();
-        return ResponseEntity.ok(count);
+    public ResponseEntity<Long> contar() {
+        try {
+            long count = service.listarTodos().size();
+            return ResponseEntity.ok(count);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
