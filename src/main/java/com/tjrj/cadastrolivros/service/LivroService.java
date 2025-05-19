@@ -38,11 +38,9 @@ public class LivroService {
         livro.setAnoPublicacao(dto.getAnoPublicacao());
         livro.setValor(dto.getValor());
 
-        // autores
         List<Autor> autores = autorRepository.findAllById(dto.getAutores());
         livro.setAutores(autores);
 
-        // assuntos
         List<Assunto> assuntos = assuntoRepository.findAllById(dto.getAssuntos());
         livro.setAssuntos(assuntos);
 

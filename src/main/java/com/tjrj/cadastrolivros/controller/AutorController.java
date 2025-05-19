@@ -86,7 +86,7 @@ public class AutorController {
             return ResponseEntity.noContent().build();
         } catch (DataIntegrityViolationException ex) {
             return ResponseEntity.badRequest()
-                    .body("Não é possível excluir: autor vinculado a livros.");
+                    .body("Não é possí­vel excluir: autor vinculado a livros.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Erro ao excluir autor.");
