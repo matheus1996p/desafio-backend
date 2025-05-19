@@ -71,7 +71,7 @@ public class LivroController {
             return ResponseEntity.ok(atualizado);
         } catch (DataIntegrityViolationException | InvalidDataAccessApiUsageException ex) {
             return ResponseEntity.badRequest()
-                    .body("Erro ao atualizar livro: dados inválidos.");
+                    .body("Erro ao atualizar livro: dados invÃ¡lidos.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Erro inesperado ao atualizar livro.");
@@ -85,10 +85,10 @@ public class LivroController {
             return ResponseEntity.noContent().build();
         } catch (DataIntegrityViolationException ex) {
             return ResponseEntity.badRequest()
-                    .body("Não é possí­vel excluir: livro vinculado a autores ou assuntos.");
+                    .body("NÃ£o Ã© possÃ­Â­vel excluir: livro vinculado a autores ou assuntos.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Livro não encontrado.");
+                    .body("Livro nÃ£o encontrado.");
         }
     }
 
